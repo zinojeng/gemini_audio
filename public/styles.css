@@ -1,0 +1,246 @@
+:root {
+  color-scheme: light dark;
+  font-family: "Inter", "Helvetica Neue", Arial, sans-serif;
+  background-color: #0f172a;
+  color: #e2e8f0;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  background: radial-gradient(circle at top, rgba(56, 189, 248, 0.25), transparent 60%),
+    radial-gradient(circle at 20% 80%, rgba(249, 115, 22, 0.2), transparent 55%),
+    #0f172a;
+}
+
+main.container {
+  width: min(960px, 92vw);
+  padding: 48px 0;
+  display: grid;
+  gap: 24px;
+}
+
+header h1 {
+  margin: 0 0 8px;
+  font-size: 2.4rem;
+  letter-spacing: 0.02em;
+}
+
+.subtitle {
+  margin: 0;
+  max-width: 720px;
+  color: rgba(226, 232, 240, 0.8);
+}
+
+.panel {
+  background: rgba(15, 23, 42, 0.75);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  border-radius: 20px;
+  padding: 32px;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.4);
+  backdrop-filter: blur(12px);
+}
+
+.form {
+  display: grid;
+  gap: 20px;
+}
+
+.field {
+  display: grid;
+  gap: 8px;
+}
+
+label,
+legend {
+  font-weight: 600;
+}
+
+input[type="password"],
+input[type="file"],
+select,
+textarea {
+  padding: 10px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.6);
+  color: inherit;
+}
+
+input[type="password"]:focus,
+input[type="file"]:focus,
+select:focus {
+  border-color: rgba(56, 189, 248, 0.6);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+}
+
+.checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.checkbox input {
+  width: 18px;
+  height: 18px;
+}
+
+.primary {
+  padding: 12px 20px;
+  border-radius: 999px;
+  border: none;
+  background: linear-gradient(135deg, #38bdf8, #6366f1);
+  color: #0f172a;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 30px rgba(99, 102, 241, 0.35);
+}
+
+.primary:active {
+  transform: translateY(1px);
+}
+
+small {
+  color: rgba(226, 232, 240, 0.6);
+}
+
+#results[hidden] {
+  display: none;
+}
+
+#output-container {
+  display: grid;
+  gap: 16px;
+}
+
+.progress-steps {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin: 16px 0;
+  padding: 0;
+}
+
+.progress-step {
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.18);
+  color: rgba(226, 232, 240, 0.88);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+}
+
+.progress-step[data-state="pending"] {
+  opacity: 0.45;
+}
+
+.progress-step[data-state="active"] {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.85), rgba(129, 140, 248, 0.85));
+  color: #0f172a;
+  transform: translateY(-1px);
+}
+
+.progress-step[data-state="done"] {
+  background: rgba(34, 197, 94, 0.25);
+  color: #bbf7d0;
+}
+
+.progress-step[data-state="error"] {
+  background: rgba(239, 68, 68, 0.25);
+  color: #fecaca;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(30, 41, 59, 0.6);
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar__fill {
+  width: 6%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(135deg, #38bdf8, #6366f1);
+  transition: width 0.25s ease, background 0.25s ease;
+}
+
+.progress-bar__fill--error {
+  background: #ef4444;
+}
+
+.progress-detail {
+  margin-top: 12px;
+  color: rgba(226, 232, 240, 0.8);
+  font-size: 0.95rem;
+  letter-spacing: 0.01em;
+}
+
+.output {
+  padding: 18px;
+  border-radius: 14px;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.output__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.output__title {
+  margin: 0;
+}
+
+.output__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.copy-button,
+.download-button {
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: rgba(15, 23, 42, 0.9);
+  color: inherit;
+  cursor: pointer;
+}
+
+.copy-button:hover,
+.download-button:hover {
+  border-color: rgba(56, 189, 248, 0.6);
+}
+
+.output__content {
+  margin: 12px 0 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: "JetBrains Mono", "SFMono-Regular", Menlo, monospace;
+  font-size: 0.95rem;
+}
+
+@media (max-width: 720px) {
+  main.container {
+    padding: 32px 0 48px;
+  }
+
+  .panel {
+    padding: 24px;
+  }
+}

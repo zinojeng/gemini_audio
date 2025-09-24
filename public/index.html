@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gemini 音訊轉文字</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <header>
+        <h1>Gemini 音訊轉文字</h1>
+        <p class="subtitle">
+          上傳音訊、選擇 Gemini 2.5 Pro 或 Flash，輸出純文字、Markdown 或 SRT，並可用 2.5 Pro 優化語句。
+        </p>
+      </header>
+
+      <section class="panel">
+        <form id="transcription-form" class="form" autocomplete="off">
+          <div class="field">
+            <label for="apiKey">Gemini API Key</label>
+            <input type="password" id="apiKey" name="apiKey" required placeholder="AIza..." />
+            <small>金鑰僅用於本次請求，不會儲存於伺服器。</small>
+          </div>
+
+          <div class="field">
+            <label for="model">模型選擇</label>
+            <select id="model" name="model">
+              <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+              <option value="gemini-2.5-flash">Gemini 2.5 Flash</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="audio">音訊檔案 (支援 wav / mp3 / m4a 等)</label>
+            <input type="file" id="audio" name="audio" accept="audio/*" required />
+          </div>
+
+          <fieldset class="field">
+            <legend>輸出格式</legend>
+            <label class="checkbox">
+              <input type="checkbox" name="format" value="text" checked /> 純文字
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" name="format" value="markdown" /> Markdown
+            </label>
+            <label class="checkbox">
+              <input type="checkbox" name="format" value="srt" /> SRT (含時間碼)
+            </label>
+          </fieldset>
+
+          <label class="checkbox field">
+            <input type="checkbox" id="optimize" name="optimize" checked />
+            使用 Gemini 2.5 Pro 優化文字
+          </label>
+
+          <button type="submit" class="primary">開始轉錄</button>
+        </form>
+      </section>
+
+      <section id="progress" class="panel" hidden>
+        <header>
+          <h2>處理進度</h2>
+        </header>
+        <ol class="progress-steps">
+          <li class="progress-step" data-step="prepare" data-state="pending">準備上傳</li>
+          <li class="progress-step" data-step="upload" data-state="pending">音訊上傳</li>
+          <li class="progress-step" data-step="transcribe" data-state="pending">Gemini 轉錄</li>
+          <li class="progress-step" data-step="finalize" data-state="pending">產出結果</li>
+        </ol>
+        <div class="progress-bar">
+          <div class="progress-bar__fill"></div>
+        </div>
+        <p id="progress-detail" class="progress-detail">準備中...</p>
+      </section>
+
+      <section id="results" class="panel" hidden>
+        <header>
+          <h2>轉錄結果</h2>
+          <p id="result-summary"></p>
+        </header>
+        <div id="output-container"></div>
+      </section>
+    </main>
+
+    <template id="output-template">
+      <article class="output">
+        <header class="output__header">
+          <h3 class="output__title"></h3>
+          <div class="output__actions">
+            <button class="copy-button" type="button">複製</button>
+            <button class="download-button" type="button">下載</button>
+          </div>
+        </header>
+        <pre class="output__content"></pre>
+      </article>
+    </template>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>
