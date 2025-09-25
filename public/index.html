@@ -42,12 +42,21 @@
               <input type="checkbox" name="format" value="text" checked /> 純文字
             </label>
             <label class="checkbox">
+              <input type="checkbox" name="format" value="notes" /> 中文筆記（依議程整理）
+            </label>
+            <label class="checkbox">
               <input type="checkbox" name="format" value="markdown" /> Markdown
             </label>
             <label class="checkbox">
               <input type="checkbox" name="format" value="srt" /> SRT (含時間碼)
             </label>
           </fieldset>
+
+          <div class="field">
+            <label for="agenda">議程（可選）</label>
+            <textarea id="agenda" name="agenda" rows="4" placeholder="請貼上講者議程或段落列表，Gemini 會依此整理筆記"></textarea>
+            <small>若提供議程，將依照項目整理中文筆記並加強重點標示。</small>
+          </div>
 
           <label class="checkbox field">
             <input type="checkbox" id="optimize" name="optimize" checked />
@@ -84,16 +93,16 @@
     </main>
 
     <template id="output-template">
-      <article class="output">
-        <header class="output__header">
+      <details class="output">
+        <summary class="output__summary">
           <h3 class="output__title"></h3>
           <div class="output__actions">
             <button class="copy-button" type="button">複製</button>
             <button class="download-button" type="button">下載</button>
           </div>
-        </header>
+        </summary>
         <pre class="output__content"></pre>
-      </article>
+      </details>
     </template>
 
     <script type="module" src="./app.js"></script>

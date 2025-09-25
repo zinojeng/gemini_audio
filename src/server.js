@@ -99,6 +99,7 @@ app.post("/api/transcribe", upload.single("audio"), async (req, res) => {
       filePath: req.file.path,
       mimeType: req.file.mimetype,
       originalFileName: req.file.originalname,
+      agenda: req.body.agenda,
       onProgress: (progress) => updateJobProgress(jobId, progress),
     });
 
@@ -142,6 +143,10 @@ app.get("*", (_req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Gemini audio transcription server listening on http://localhost:${PORT}`);
 });
+
+// Node.js 預設請求逾時為 2 分鐘，長音檔轉錄會超過此時間限制，需調整。
+server.requestTimeout = 1000 * 60 * 30; // 30 分鐘
+server.headersTimeout = 1000 * 60 * 31; // 稍長於 requestTimeout 以避免提前關閉

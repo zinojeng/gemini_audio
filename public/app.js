@@ -3,6 +3,7 @@ const apiKeyInput = document.querySelector("#apiKey");
 const modelSelect = document.querySelector("#model");
 const audioInput = document.querySelector("#audio");
 const optimizeInput = document.querySelector("#optimize");
+const agendaInput = document.querySelector("#agenda");
 const resultsSection = document.querySelector("#results");
 const resultSummary = document.querySelector("#result-summary");
 const outputContainer = document.querySelector("#output-container");
@@ -20,6 +21,7 @@ const progressSteps = {
 
 const FORMAT_LABELS = {
   text: "純文字",
+  notes: "中文筆記",
   markdown: "Markdown",
   srt: "SRT",
 };
@@ -93,6 +95,7 @@ form.addEventListener("submit", async (event) => {
   formData.append("apiKey", apiKeyInput.value.trim());
   formData.append("model", modelSelect.value);
   formData.append("optimize", optimizeInput.checked ? "true" : "false");
+  formData.append("agenda", agendaInput?.value.trim() || "");
   formData.append("outputFormats", JSON.stringify(selectedFormats));
   formData.append("audio", file, file.name);
 
@@ -292,7 +295,7 @@ function sendTranscriptionRequest(formData) {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/api/transcribe");
     xhr.responseType = "json";
-    xhr.timeout = 1000 * 60 * 8; // 8 分鐘上限
+    xhr.timeout = 0; // 0 代表不主動超時，改依伺服器回應為準
 
     xhr.upload.onprogress = (event) => {
       if (!event.lengthComputable) {
@@ -337,11 +340,6 @@ function sendTranscriptionRequest(formData) {
       reject(new Error("網路或伺服器連線失敗，請稍後再試"));
     };
 
-    xhr.ontimeout = () => {
-      stopTranscribeTicker();
-      reject(new Error("處理時間過長，請縮短音訊或稍後重試"));
-    };
-
     xhr.send(formData);
   });
 }
@@ -358,50 +356,64 @@ function renderResults(payload, formats) {
 
   outputContainer.innerHTML = "";
 
-  const orderedFormats = ["text", "markdown", "srt"].filter((format) =>
-    formats.includes(format)
-  );
+  const outputs = payload.outputs ?? {};
 
-  orderedFormats.forEach((format) => {
-    const value = payload.outputs?.[format];
+  const blocks = [];
+
+  if (formats.includes("notes") && outputs.notes) {
+    blocks.push({
+      title: FORMAT_LABELS.notes,
+      value: outputs.notes,
+      fileName: payload.fileName,
+      format: "notes",
+      suffix: "notes",
+      open: true,
+    });
+  }
+
+  if (payload.optimizedTranscript && payload.rawTranscript) {
+    blocks.push({
+      title: "原始轉錄稿（未優化）",
+      value: payload.rawTranscript,
+      fileName: payload.fileName,
+      format: "raw",
+      suffix: "raw",
+    });
+  }
+
+  if (formats.includes("text") && outputs.text) {
+    blocks.push({
+      title: FORMAT_LABELS.text,
+      value: outputs.text,
+      fileName: payload.fileName,
+      format: "text",
+    });
+  }
+
+  ["markdown", "srt"].forEach((format) => {
+    if (!formats.includes(format)) {
+      return;
+    }
+    const value = outputs[format];
     if (!value) {
       return;
     }
-
-    const node = template.content.firstElementChild.cloneNode(true);
-    const title = node.querySelector(".output__title");
-    const pre = node.querySelector(".output__content");
-    const copyButton = node.querySelector(".copy-button");
-    const downloadButton = node.querySelector(".download-button");
-
-    title.textContent = FORMAT_LABELS[format] ?? format;
-    pre.textContent = value;
-
-    copyButton.addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(value);
-        copyButton.textContent = "已複製";
-        setTimeout(() => {
-          copyButton.textContent = "複製";
-        }, 1200);
-      } catch (_err) {
-        alert("複製失敗，請手動複製");
-      }
+    blocks.push({
+      title: FORMAT_LABELS[format] ?? format,
+      value,
+      fileName: payload.fileName,
+      format,
+      suffix: format === "markdown" ? "markdown" : "",
     });
+  });
 
-    downloadButton.addEventListener("click", () => {
-      const blob = new Blob([value], { type: "text/plain;charset=utf-8" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = buildFileName(payload.fileName, format);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      URL.revokeObjectURL(url);
-    });
-
-    outputContainer.appendChild(node);
+  blocks.forEach((block, index) => {
+    outputContainer.appendChild(
+      createOutputNode({
+        ...block,
+        open: index === 0 ? block.open ?? true : block.open ?? false,
+      })
+    );
   });
 }
 
@@ -411,15 +423,60 @@ function renderError(message) {
   outputContainer.innerHTML = "";
 }
 
-function buildFileName(original, format) {
+function createOutputNode({ title, value, fileName, format, suffix = "", open = false }) {
+  const node = template.content.firstElementChild.cloneNode(true);
+  const titleNode = node.querySelector(".output__title");
+  const contentNode = node.querySelector(".output__content");
+  const copyButton = node.querySelector(".copy-button");
+  const downloadButton = node.querySelector(".download-button");
+
+  titleNode.textContent = title;
+  contentNode.textContent = value;
+  node.open = open;
+
+  copyButton.addEventListener("click", async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    try {
+      await navigator.clipboard.writeText(value);
+      copyButton.textContent = "已複製";
+      setTimeout(() => {
+        copyButton.textContent = "複製";
+      }, 1200);
+    } catch (_err) {
+      alert("複製失敗，請手動複製");
+    }
+  });
+
+  downloadButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const blob = new Blob([value], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = buildFileName(fileName, format, suffix);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  return node;
+}
+
+function buildFileName(original, format, suffix = "") {
   const base = original?.split(".").slice(0, -1).join(".") || "transcript";
   const extension = {
     text: "txt",
+    notes: "md",
     markdown: "md",
     srt: "srt",
   }[format] || "txt";
 
-  return `${base}.${extension}`;
+  const suffixPart = suffix ? `-${suffix}` : "";
+
+  return `${base}${suffixPart}.${extension}`;
 }
 
 function resetProgress() {

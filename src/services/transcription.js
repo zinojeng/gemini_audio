@@ -5,7 +5,7 @@ import { stripCodeFences } from "../utils/text.js";
 import { splitAudioFile, removeDirectory } from "../utils/audioChunker.js";
 
 const SUPPORTED_MODELS = new Set(["gemini-2.5-pro", "gemini-2.5-flash"]);
-const SUPPORTED_FORMATS = new Set(["text", "markdown", "srt"]);
+const SUPPORTED_FORMATS = new Set(["text", "notes", "markdown", "srt"]);
 const INLINE_AUDIO_BYTES_THRESHOLD = 24 * 1024 * 1024;
 
 const TRANSCRIPTION_PROMPT = [
@@ -32,6 +32,26 @@ const SRT_PROMPT = [
   "If exact timings are unknown, estimate steadily increasing timestamps.",
   "Return valid SRT text only.",
 ].join(" ");
+
+function buildNotesPrompt(transcript, agenda) {
+  const agendaBlock = agenda
+    ? `以下是使用者提供的議程，請依照議程順序分段整理：\n${agenda}`
+    : "使用者未提供議程，請依內容合理分段，同時保持清楚層級。";
+
+  return [
+    "你是一位中文逐字稿整理專家，請依照以下指示整理稿件。",
+    "儘可能保留的演講者內容，並作修飾潤稿，階層或重點化（粗體或底線或斜線）。",
+    "more detail summary in 筆記。但儘可能保留的演講者內容，並作修飾潤稿，階層或重點化（粗體或底線或斜線）。",
+    "根據使用者給予的 agenda 來分段整理。",
+    "need more clear detailed comprehensive summary for speaker said。",
+    "not 完整呈現演講內容，請修正。",
+    "不是 summary ，是整理 speaker 內容，revised , 但儘可能完整呈現, 修飾潤稿，階層或重點化（粗體或底線或斜線）。",
+    agendaBlock,
+    "請輸出為繁體中文 Markdown，使用條列、階層、標題與粗體／斜體／底線強調關鍵重點，避免新增額外結語或註解。",
+    "逐字稿如下：",
+    transcript,
+  ].join("\n\n");
+}
 
 function normaliseFormats(formats) {
   if (!Array.isArray(formats)) {
@@ -101,6 +121,15 @@ async function toSrt(model, transcript) {
   return cleaned.includes("-->") ? cleaned : raw;
 }
 
+async function toChineseNotes(model, transcript, agenda) {
+  const response = await model.generateContent([
+    { text: buildNotesPrompt(transcript, agenda) },
+  ]);
+
+  const raw = response.response.text().trim();
+  return stripCodeFences(raw);
+}
+
 export async function transcribeAudio({
   apiKey,
   model,
@@ -110,6 +139,7 @@ export async function transcribeAudio({
   mimeType,
   originalFileName,
   onProgress,
+  agenda,
 }) {
   if (!apiKey) {
     throw new Error("A Gemini API key is required");
@@ -209,7 +239,13 @@ export async function transcribeAudio({
     throw new Error("Transcription returned empty result");
   }
 
-  const needsProModel = optimize || formats.includes("markdown") || formats.includes("srt");
+  const agendaText = typeof agenda === "string" ? agenda.trim() : "";
+
+  const needsProModel =
+    optimize ||
+    formats.includes("markdown") ||
+    formats.includes("srt") ||
+    formats.includes("notes");
   const proModel = needsProModel
     ? genAI.getGenerativeModel({ model: "gemini-2.5-pro" })
     : null;
@@ -239,6 +275,15 @@ export async function transcribeAudio({
         } else {
           outputs.markdown = improvedTranscript;
         }
+        report({ phase: "format", format, status: "done", message: `${format} 產出完成` });
+        return;
+      }
+
+      if (format === "notes") {
+        if (!proModel) {
+          throw new Error("中文筆記輸出需要 Gemini 2.5 Pro 模型");
+        }
+        outputs.notes = await toChineseNotes(proModel, rawTranscript, agendaText);
         report({ phase: "format", format, status: "done", message: `${format} 產出完成` });
         return;
       }
